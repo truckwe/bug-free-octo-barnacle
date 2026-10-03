@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Generator</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0b0b0f;
+  color: white;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 430px;
+  background: #15151c;
+  border: 1px solid #292933;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 15px 40px rgba(0,0,0,.4);
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 27px;
+}
+
+.subtitle {
+  color: #8f8f9c;
+  margin-bottom: 22px;
+}
+
+.password-box {
+  display: flex;
+  gap: 8px;
+  background: #0d0d12;
+  border: 1px solid #30303a;
+  border-radius: 14px;
+  padding: 8px;
+  margin-bottom: 20px;
+}
+
+#password {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font-size: 17px;
+  padding: 10px;
+}
+
+.copy {
+  border: 0;
+  border-radius: 10px;
+  background: #252532;
+  color: white;
+  padding: 0 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.copy:active,
+.generate:active {
+  transform: scale(.97);
+}
+
+.length-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.length-value {
+  color: #9b6cff;
+  font-weight: bold;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #7c4dff;
+  margin-bottom: 20px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #dddde5;
+}
+
+.option input {
+  width: 19px;
+  height: 19px;
+  accent-color: #7c4dff;
+}
+
+.strength {
+  margin-bottom: 20px;
+}
+
+.strength-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+#strengthText {
+  font-weight: bold;
+}
+
+.bar {
+  height: 7px;
+  background: #292933;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#strengthBar {
+  height: 100%;
+  width: 0%;
+  background: #7c4dff;
+  border-radius: 10px;
+  transition: width .25s;
+}
+
+.generate {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 15px;
+  background: #7c4dff;
+  color: white;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.info {
+  text-align: center;
+  color: #777783;
+  font-size: 12px;
+  margin-top: 17px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🔐 Генератор паролей</h1>
+
+  <div class="subtitle">
+    Создай надёжный пароль прямо на устройстве
+  </div>
+
+  <div class="password-box">
+    <input id="password" type="text" readonly>
+    <button class="copy" onclick="copyPassword()">📋 Копировать</button>
+  </div>
+
+  <div class="length-row">
+    <span>Длина пароля</span>
+    <span class="length-value" id="lengthValue">16</span>
+  </div>
+
+  <input
+    id="length"
+    type="range"
+    min="6"
+    max="64"
+    value="16"
+    oninput="updateLength()"
+  >
+
+  <div class="options">
+
+    <label class="option">
+      <span>🔠 Заглавные буквы</span>
+      <input id="uppercase" type="checkbox" checked>
+    </label>
+
+    <label class="option">
+      <span>🔡 Строчные буквы</span>
+      <input id="lowercase" type="checkbox" checked>
+    </label>
+
+    <label class="option">
+      <span>🔢 Цифры</span>
+      <input id="numbers" type="checkbox" checked>
+    </label>
+
+    <label class="option">
+      <span>🔣 Спецсимволы</span>
+      <input id="symbols" type="checkbox" checked>
+    </label>
+
+  </div>
+
+  <div class="strength">
+
+    <div class="strength-title">
+      <span>Надёжность</span>
+      <span id="strengthText">Сильный</span>
+    </div>
+
+    <div class="bar">
+      <div id="strengthBar"></div>
+    </div>
+
+  </div>
+
+  <button class="generate" onclick="generatePassword()">
+    🔄 Сгенерировать пароль
+  </button>
+
+  <div class="info">
+    🔒 Пароль генерируется локально и никуда не отправляется
+  </div>
+
+</div>
+
+<script>
+
+const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const lower = "abcdefghijklmnopqrstuvwxyz";
+const numbers = "0123456789";
+const symbols = "!@#$%^&*()_+-=[]{}<>?";
+
+function updateLength() {
+  const length = document.getElementById("length").value;
+  document.getElementById("lengthValue").textContent = length;
+  generatePassword();
+}
+
+function generatePassword() {
+
+  const length =
+    Number(document.getElementById("length").value);
+
+  const useUpper =
+    document.getElementById("uppercase").checked;
+
+  const useLower =
+    document.getElementById("lowercase").checked;
+
+  const useNumbers =
+    document.getElementById("numbers").checked;
+
+  const useSymbols =
+    document.getElementById("symbols").checked;
+
+  let characters = "";
+
+  if (useUpper) characters += upper;
+  if (useLower) characters += lower;
+  if (useNumbers) characters += numbers;
+  if (useSymbols) characters += symbols;
+
+  if (!characters) {
+    document.getElementById("password").value =
+      "Выбери хотя бы один тип";
+    updateStrength(0);
+    return;
+  }
+
+  let password = "";
+
+  // Используем криптографически стойкий генератор
+  const randomValues =
+    new Uint32Array(length);
+
+  crypto.getRandomValues(randomValues);
+
+  for (let i = 0; i < length; i++) {
+    password +=
+      characters[randomValues[i] % characters.length];
+  }
+
+  document.getElementById("password").value =
+    password;
+
+  updateStrength(
+    calculateStrength(
+      length,
+      useUpper,
+      useLower,
+      useNumbers,
+      useSymbols
+    )
+  );
+}
+
+function calculateStrength(
+  length,
+  upper,
+  lower,
+  numbers,
+  symbols
+) {
+
+  let types = 0;
+
+  if (upper) types++;
+  if (lower) types++;
+  if (numbers) types++;
+  if (symbols) types++;
+
+  let score = 0;
+
+  if (length >= 8) score++;
+  if (length >= 12) score++;
+  if (length >= 16) score++;
+  if (length >= 24) score++;
+
+  if (types >= 2) score++;
+  if (types >= 3) score++;
+  if (types >= 4) score++;
+
+  return Math.min(score, 7);
+}
+
+function updateStrength(score) {
+
+  const bar =
+    document.getElementById("strengthBar");
+
+  const text =
+    document.getElementById("strengthText");
+
+  const percent =
+    Math.min(score / 7 * 100, 100);
+
+  bar.style.width =
+    percent + "%";
+
+  if (score <= 2) {
+    text.textContent = "Слабый";
+  }
+  else if (score <= 4) {
+    text.textContent = "Средний";
+  }
+  else if (score <= 5) {
+    text.textContent = "Сильный";
+  }
+  else {
+    text.textContent = "Очень сильный";
+  }
+}
+
+async function copyPassword() {
+
+  const password =
+    document.getElementById("password").value;
+
+  if (!password ||
+      password === "Выбери хотя бы один тип") {
+    return;
+  }
+
+  try {
+
+    await navigator.clipboard.writeText(password);
+
+  } catch {
+
+    const textarea =
+      document.createElement("textarea");
+
+    textarea.value = password;
+
+    document.body.appendChild(textarea);
+
+    textarea.select();
+
+    document.execCommand("copy");
+
+    textarea.remove();
+  }
+
+  const button =
+    document.querySelector(".copy");
+
+  button.textContent = "✓ Скопировано";
+
+  setTimeout(() => {
+    button.textContent = "📋 Копировать";
+  }, 1500);
+}
+
+
+// Генерируем пароль сразу после открытия
+generatePassword();
+
+</script>
+
+</body>
+</html>
